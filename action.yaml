@@ -1,0 +1,59 @@
+name: 'Promote Container Image'
+description: 'Promotes a container image'
+inputs:
+  source_image_destination:
+    description: 'The destination of the source image'
+    required: true
+  target_image_destination:
+    description: 'The destination of the target image'
+    required: true
+  source_registry_url:
+    description: 'The source registry url'
+    required: true
+  target_registry_url:
+    description: 'The target registry url'
+    required: true
+  GCP_WORKLOAD_IDENTITY_PROVIDER:
+    description: 'The GCP workload identity provider for credential-less access'
+    required: true
+  GCP_SERVICE_ACCOUNT:
+    description: 'The GCP service account id for credential-less access'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v0'
+      with:
+        token_format: 'access_token'
+        workload_identity_provider: ${{ inputs.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ inputs.GCP_SERVICE_ACCOUNT }}
+
+    - name: Login to Source Registry
+      uses: docker/login-action@v1
+      with:
+        registry: ${{ inputs.source_registry_url }}
+        username: oauth2accesstoken
+        password: ${{ steps.auth.outputs.access_token }}
+
+    - name: Login to Target Registry
+      if: inputs.target_registry_url != inputs.source_registry_url
+      uses: docker/login-action@v1
+      with:
+        registry: ${{ inputs.target_registry_url }}
+        username: oauth2accesstoken
+        password: ${{ steps.auth.outputs.access_token }}
+
+    - name: pull image
+      shell: bash
+      run: docker pull ${{ inputs.source_image_destination }}
+
+    - name: tag image
+      shell: bash
+      run: docker tag ${{ inputs.source_image_destination }} ${{ inputs.target_image_destination }}
+
+    - name: push image
+      shell: bash
+      run: docker push ${{ inputs.target_image_destination }}

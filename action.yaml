@@ -19,6 +19,20 @@ inputs:
   GCP_SERVICE_ACCOUNT:
     description: 'The GCP service account id for credential-less access'
     required: true
+  SLACK_WEBHOOK_URL:
+    description: 'The Slack Webhook URL to send the notification to'
+    default: ''
+    required: false
+  SLACK_CHANNEL:
+    description: 'The Slack Channel to send the notification to'
+    required: false
+  SLACK_TITLE:
+    description: 'The Slack Message Title'
+    default: 'Docker Image Promoted'
+    required: false
+  SLACK_MESSAGE:
+    description: 'The Slack Message'
+    required: false
 
 runs:
   using: "composite"
@@ -58,3 +72,12 @@ runs:
     - name: push image
       shell: bash
       run: docker push ${{ inputs.target_image_destination }}
+
+    - name: slack notify
+      if: inputs.SLACK_WEBHOOK_URL != ''
+      uses: rtCamp/action-slack-notify@v2.2.0
+      env:
+        SLACK_CHANNEL: ${{ inputs.SLACK_CHANNEL }}
+        SLACK_WEBHOOK: ${{ inputs.SLACK_WEBHOOK_URL }}
+        SLACK_TITLE: ${{ inputs.SLACK_TITLE }}
+        SLACK_MESSAGE: ${{ inputs.SLACK_MESSAGE }}

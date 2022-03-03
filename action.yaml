@@ -15,7 +15,7 @@ inputs:
     required: true
   target_environment:
     description: 'The target environment to promote the image to'
-    required: true
+    required: false
   GCP_WORKLOAD_IDENTITY_PROVIDER:
     description: 'The GCP workload identity provider for credential-less access'
     required: true

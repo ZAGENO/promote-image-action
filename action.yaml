@@ -13,6 +13,9 @@ inputs:
   target_registry_url:
     description: 'The target registry url'
     required: true
+  target_environment:
+    description: 'The target environment to promote the image to'
+    required: true
   GCP_WORKLOAD_IDENTITY_PROVIDER:
     description: 'The GCP workload identity provider for credential-less access'
     required: true
@@ -25,13 +28,6 @@ inputs:
     required: false
   SLACK_CHANNEL:
     description: 'The Slack Channel to send the notification to'
-    required: false
-  SLACK_TITLE:
-    description: 'The Slack Message Title'
-    default: 'Docker Image Promoted'
-    required: false
-  SLACK_MESSAGE:
-    description: 'The Slack Message'
     required: false
 
 runs:
@@ -73,11 +69,22 @@ runs:
       shell: bash
       run: docker push ${{ inputs.target_image_destination }}
 
+    - name: slackMessage
+      id: set_slack_message
+      shell: bash
+      run: |
+        if [ ! -z "$PR_TITLE" ]; then
+          echo "::set-output name=message::<$PR_URL|$PR_TITLE>"
+        fi
+      env:
+        PR_URL: ${{ github.event.pull_request.html_url }}
+        PR_TITLE: ${{ github.event.pull_request.title }}
+
     - name: slack notify
       if: inputs.SLACK_WEBHOOK_URL != ''
       uses: rtCamp/action-slack-notify@v2.2.0
       env:
         SLACK_CHANNEL: ${{ inputs.SLACK_CHANNEL }}
         SLACK_WEBHOOK: ${{ inputs.SLACK_WEBHOOK_URL }}
-        SLACK_TITLE: ${{ inputs.SLACK_TITLE }}
-        SLACK_MESSAGE: ${{ inputs.SLACK_MESSAGE }}
+        SLACK_TITLE: Image ${{ inputs.target_image_destination }} promoted to ${{ inputs.target_environment }}
+        SLACK_MESSAGE: ${{ steps.set_slack_message.outputs.message }}

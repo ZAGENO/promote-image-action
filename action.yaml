@@ -75,6 +75,8 @@ runs:
       run: |
         if [ ! -z "$PR_TITLE" ]; then
           echo "::set-output name=message::<$PR_URL|$PR_TITLE>"
+        else
+          echo "::set-output name=message::Image promotion for {{ inputs.target_environment }}"
         fi
       env:
         PR_URL: ${{ github.event.pull_request.html_url }}
